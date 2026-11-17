@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Docker Engine ships in the orb image but is disabled. Amp runs commands as
+# `user` without supplementary groups from /etc/group, so membership of the
+# `docker` group never takes effect. Hand the socket to the `user` group
+# instead, which every Amp process has as its primary group.
+echo "==> Configuring Docker socket group"
+dropin=/etc/systemd/system/docker.socket.d/amp-orb.conf
+want=$'[Socket]\nSocketGroup=user'
+if [[ "$(cat "$dropin" 2>/dev/null)" != "$want" ]]; then
+  sudo mkdir -p "$(dirname "$dropin")"
+  printf '%s\n' "$want" | sudo tee "$dropin" >/dev/null
+  sudo systemctl daemon-reload
+  sudo systemctl stop docker.service docker.socket
+fi
+
+if ! dpkg -s docker-buildx-plugin >/dev/null 2>&1; then
+  echo "==> Installing Docker buildx"
+  sudo apt-get update -q
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q docker-buildx-plugin
+fi
+
+echo "==> Enabling Docker"
+sudo systemctl enable --now docker.socket docker.service
+
+docker info --format 'Docker {{.ServerVersion}} ready'
+docker buildx version

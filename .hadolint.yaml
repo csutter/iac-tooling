@@ -1,0 +1,5 @@
+ignored:
+  # Debian archives drop superseded package versions, so pinned apt versions
+  # break the build on every security update. The base image tag pins the
+  # release instead.
+  - DL3008
