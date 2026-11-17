@@ -11,3 +11,11 @@ updates:
       actions:
         patterns:
           - "*"
+
+  # Bumps the digest-pinned base image when its tag is republished.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
